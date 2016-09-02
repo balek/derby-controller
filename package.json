@@ -1,10 +1,11 @@
 {
   "name": "derby-controller",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "coffee -c index.coffee"
+    "build": "coffee -c index.coffee",
+    "prepublish": "npm run build"
   },
   "author": "Alexey Balekhov <a@balek.ru>",
   "license": "AGPL-3.0",
