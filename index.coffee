@@ -186,13 +186,16 @@ registerController = (app, cls) ->
                 model.setDiff path, func model.get path
 
         # Create PageComponent object to make subscriptions
-        context = page._controllerContext ?= model: model
+        context = page._controllerContext ?= model: model, page: page
         context.params = model.get 'params'
         context.__proto__ = cls::
 
         context.subscribe context.$model, (err) ->
 #            return next() if err == 404
             return next err if err
+
+            if context.render? next
+                return
 
             return next() unless context.name
 
