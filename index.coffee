@@ -140,17 +140,18 @@ module.exports.PageComponent = class PageComponent extends Component
         @model.root.subscribe subscriptions, (err) =>
             return next err if err
             for name, query of refs
+                rootPath = '_page.' + name
                 # Remove previous ref when resubscribing. Remove only when ref changes to refList and vice versa.
                 if query.expression?.$distinct or query.expression?.$count or query.expression?.$aggregate
-                    if name of @model.root._refLists.fromMap
+                    if rootPath of @model.root._refLists.fromMap
                         @model.removeRef name
                     query.refExtra @model.at name
                 else
                     if query.expression
-                        if name of @model.root._refLists.fromMap
+                        if rootPath of @model.root._refs.fromMap
                             @model.removeRef name
                     else
-                        if name of @model.root._refs.fromMap
+                        if rootPath of @model.root._refLists.fromMap
                             @model.removeRef name
                     @model.ref name, query
 
