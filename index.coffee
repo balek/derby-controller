@@ -73,7 +73,7 @@ module.exports = (app) ->
 module.exports.PageComponent = class PageComponent extends Component
     $paramTypes:
         number: (v) -> if v then Number v
-        boolean: (v) -> v == true
+        boolean: (v) -> v == 'true'
 
     $subscribe: ($model, next) ->
         return next() if not $model
