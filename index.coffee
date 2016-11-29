@@ -53,7 +53,13 @@ module.exports = (app) ->
 
 
         if cls::path
-            app.get cls::path, controller
+            paths =
+                if _.isString cls::path
+                    [ cls::path ]
+                else
+                    cls::path
+            for path in paths
+                app.get path, controller
 
             if app.tracksRoutes
                 app.tracksRoutes.sort (a, b) ->
