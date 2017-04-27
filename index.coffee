@@ -28,13 +28,20 @@ module.exports = (app) ->
         ns = page.model.get '$render.ns'
         if ns of app._pages
             page.setClass app._pages[ns]
+            page.preRender()
+
+    app.on 'render', (page) ->
+        page.preRender()
+        
+    app.on 'load', (page) -> page.emit 'create'
+    app.on 'routeDone', (page) ->
+        if not app.derby.util.isServer
+            page.emit 'create'
 
     app.controller = (cls) ->
         if cls.prototype not instanceof PageController
             oldPrototype = cls::
             cls:: = new PageController
-            cls::_init = oldPrototype.init
-            delete oldPrototype.init
             for k, v of oldPrototype
                 cls::[k] = v
 
@@ -87,7 +94,7 @@ module.exports = (app) ->
             cls::register app
 
 
-    module.exports.PageController = class PageController extends app.Page
+    app.PageController = class PageController extends app.Page
         constructor: ->
         $paramTypes:
             number: (v) -> if v then Number v
@@ -113,7 +120,10 @@ module.exports = (app) ->
                 if query == undefined
                 else if typeof query == 'string'
                     refs[name] = @model.root.at query
-                    subscriptions.push query
+                    if '.' in query
+                        subscriptions.push query
+                    else
+                        subscriptions.push @model.root.query query, {}
                 else if '$path' of query
                     refs[name] = @model.root.at query.$path
                     subscriptions.push query.$path
@@ -129,12 +139,17 @@ module.exports = (app) ->
                     if '$sort' of query
                         q = q.sort query.$sort
                     q.ref $wrapper
-                else if '$sort' of query
-                    @model.root.sort(query.$collection, query.$sort).ref $wrapper
+#                else if '$sort' of query
+#                    @model.root.sort(query.$collection, query.$sort).ref $wrapper
                 else if '$ref' of query
                     refs[name] = query.$ref
                 else if '$start' of query
                     @model.start $wrapper, query.$start...
+                else if '$ids' of query
+                    @model.push '_pathQueries', query
+                    ids = @model.get query.$ids
+                    for id in ids or []
+                        subscriptions.push query.$collection + '.' + id
                 else
                     if '$ids' of query
                         $wrapper = @model.root.query query.$collection, '_page.' + query.$ids
@@ -193,21 +208,34 @@ module.exports = (app) ->
                 @page.render @name
     
     
-        init: (model) ->
+        preRender: (model) ->
+            for name of @model.get()
+                @[name] = @model.at name
+
+            for {path, hash} in @model.get('_queries') or []
+                @[path] = @model.root._queries.map[hash]
+
+            @model.get('_pathQueries').forEach (q) =>
+                @model.on 'change', q.$ids, (value, oldValue) =>
+                    if value
+                        @model.root.subscribe value.map (id) -> q.$collection + '.' + id
+                    if oldValue
+                        @model.root.unsubscribe oldValue.map (id) -> q.$collection + '.' + id
+
             for name in @root.get('_page.$required') or []
                 @model.on 'change', name, (value) =>
                     if not value
                         @app.history.refresh()
     
-            @_init?(model)
+            @init?(model)
     
     
             @on 'create', ->
-                @model.on 'change', 'params.query**', (path) =>
+                @model.on 'change', '$render.params.query**', (path) =>
                     #return if String(arguments[1]) == String(arguments[2])  # Временный костыль.
                     # Не пашет для объектов
                     return if path.startsWith '_'
-                    query = @model.get 'params.query'
+                    query = @model.get '$render.params.query'
                     query = Object.assign {}, query
                     for k of query
                         if k.startsWith '_'
