@@ -215,7 +215,7 @@ module.exports = (app) ->
             for {path, hash} in @model.get('_queries') or []
                 @[path] = @model.root._queries.map[hash]
 
-            @model.get('_pathQueries').forEach (q) =>
+            @model.get('_pathQueries')?.forEach (q) =>
                 @model.on 'change', q.$ids, (value, oldValue) =>
                     if value
                         @model.root.subscribe value.map (id) -> q.$collection + '.' + id
