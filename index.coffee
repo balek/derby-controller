@@ -236,11 +236,13 @@ module.exports = (app) ->
                     # Не пашет для объектов
                     return if path.startsWith '_'
                     query = @model.get '$render.params.query'
-                    query = Object.assign {}, query
+                    query = JSON.parse JSON.stringify query
                     for k of query
                         if k.startsWith '_'
                             delete query[k]
-                    @app.history.replace '?' + qs.stringify(query), not @onQueryChange? or @onQueryChange == 'rerender'
+                    queryString = qs.stringify query
+                    rerender = not @onQueryChange? or @onQueryChange == 'rerender'
+                    @app.history.replace '?' + queryString, rerender
                     if @onQueryChange == 'resubscribe'
                         @model.root.set '_session.loading', true
                         # TODO: unsubscribe path queries
