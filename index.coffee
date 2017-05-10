@@ -97,6 +97,7 @@ module.exports = (app) ->
     app.PageController = class PageController extends app.Page
         constructor: ->
         $paramTypes:
+            date: (v) -> new Date v
             number: (v) -> if v then Number v
             boolean: (v) -> v == 'true'
     
