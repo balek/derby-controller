@@ -223,6 +223,18 @@ module.exports = (app) ->
                     if oldValue
                         @model.root.unsubscribe oldValue.map (id) -> q.$collection + '.' + id
 
+                @model.on 'change', q.$ids + '.*', (index, value, oldValue) =>
+                    if value
+                        @model.root.subscribe q.$collection + '.' + value
+                    if oldValue
+                        @model.root.unsubscribe q.$collection + '.' + oldValue
+
+                @model.on 'insert', q.$ids, (index, values) =>
+                    @model.root.subscribe values.map (id) -> q.$collection + '.' + id
+
+                @model.on 'remove', q.$ids, (index, values) =>
+                    @model.root.unsubscribe values.map (id) -> q.$collection + '.' + id
+
             for name in @root.get('_page.$required') or []
                 @model.on 'change', name, (value) =>
                     if not value
