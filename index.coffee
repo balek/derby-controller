@@ -146,14 +146,10 @@ module.exports = (app) ->
                     refs[name] = query.$ref
                 else if '$start' of query
                     @model.start $wrapper, query.$start...
-                else if '$ids' of query
-                    @model.push '_pathQueries', query
-                    ids = @model.get query.$ids
-                    for id in ids or []
-                        subscriptions.push query.$collection + '.' + id
                 else
                     if '$ids' of query
-                        $wrapper = @model.root.query query.$collection, '_page.' + query.$ids
+                        @model.push '_pathQueries', Object.assign $name: name, query
+                        $wrapper = @model.root.query query.$collection, _id: $in: @model.get query.$ids
                     else if '$serverQuery' of query
                         params = Object.assign {}, query
                         delete params.$collection
@@ -217,23 +213,16 @@ module.exports = (app) ->
                 @[path] = @model.root._queries.map[hash]
 
             @model.get('_pathQueries')?.forEach (q) =>
-                @model.on 'change', q.$ids, (value, oldValue) =>
-                    if value
-                        @model.root.subscribe value.map (id) -> q.$collection + '.' + id
-                    if oldValue
-                        @model.root.unsubscribe oldValue.map (id) -> q.$collection + '.' + id
+                onChange = =>
+                    @[q.$name].unsubscribe()
+                    @[q.$name] = @model.root.query q.$collection, _id: $in: @model.get q.$ids
+                    @[q.$name].subscribe =>
+                        @model.ref q.$name, @[q.$name]
 
-                @model.on 'change', q.$ids + '.*', (index, value, oldValue) =>
-                    if value
-                        @model.root.subscribe q.$collection + '.' + value
-                    if oldValue
-                        @model.root.unsubscribe q.$collection + '.' + oldValue
-
-                @model.on 'insert', q.$ids, (index, values) =>
-                    @model.root.subscribe values.map (id) -> q.$collection + '.' + id
-
-                @model.on 'remove', q.$ids, (index, values) =>
-                    @model.root.unsubscribe values.map (id) -> q.$collection + '.' + id
+                @model.on 'change', q.$ids, onChange
+                @model.on 'change', q.$ids + '.*', onChange
+                @model.on 'insert', q.$ids, onChange
+                @model.on 'remove', q.$ids, onChange
 
             for name in @root.get('_page.$required') or []
                 @model.on 'change', name, (value) =>
