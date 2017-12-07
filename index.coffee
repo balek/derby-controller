@@ -40,10 +40,16 @@ module.exports = (app) ->
 
     app.controller = (cls) ->
         if cls.prototype not instanceof PageController
-            oldPrototype = cls::
-            cls:: = new PageController
-            for k, v of oldPrototype
-                cls::[k] = v
+            if Object.setPrototypeOf
+                prototype = cls::
+                while Object.getPrototypeOf(prototype) != Object.prototype
+                    prototype = Object.getPrototypeOf prototype
+                Object.setPrototypeOf prototype, PageController::
+            else
+                oldPrototype = cls::
+                cls:: = new PageController
+                for k, v of oldPrototype
+                    cls::[k] = v
 
         controller = (page, model, params, next) ->
             @setClass cls
