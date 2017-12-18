@@ -67,7 +67,8 @@ module.exports = (app) ->
             @$subscribe @$model, (err) =>
     #            return next() if err == 404
                 return next err if err
-                @$render next
+                result = @$render next
+                result?.catch? next
 
 
         if cls::path
