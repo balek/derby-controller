@@ -243,6 +243,7 @@ module.exports = (app) ->
                     #return if String(arguments[1]) == String(arguments[2])  # Временный костыль.
                     # Не пашет для объектов
                     return if path.startsWith '_'
+                    console.log 'ad', arguments
                     query = @model.get '$render.params.query'
                     query = JSON.parse JSON.stringify query
                     for k of query
@@ -258,6 +259,8 @@ module.exports = (app) ->
                         for q in @model.get '_queries'
                             if @model.get('_ownRefs').includes q.path
                                 oldSubscriptions[q.path] = @[q.path]
+                        for path of oldSubscriptions
+                            @model.remove '_queries', _.findIndex @model.get('_queries'), path: path
                         oldRefs = @model.get '_ownRefs'
                         @model.set '_ownRefs', []
                         @$subscribe @$model, (err) =>
