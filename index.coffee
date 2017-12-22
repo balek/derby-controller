@@ -244,7 +244,6 @@ module.exports = (app) ->
                     #return if String(arguments[1]) == String(arguments[2])  # Временный костыль.
                     # Не пашет для объектов
                     return if path.startsWith '_'
-                    console.log 'ad', arguments
                     query = @model.get '$render.params.query'
                     query = JSON.parse JSON.stringify query
                     for k of query
